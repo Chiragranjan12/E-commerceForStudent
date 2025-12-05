@@ -2,48 +2,24 @@ import { NavBar } from "@/components/layout/NavBar";
 import { ProductCard } from "@/components/shop/ProductCard";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Star } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import type { Product } from "@shared/schema";
 
-// Import generated assets
 import bootsImg from "@assets/generated_images/metallic_silver_boots,_avant-garde_fashion_object.png";
 import sculptureImg from "@assets/generated_images/abstract_chrome_sculpture,_industrial_artifact.png";
 import hoodieImg from "@assets/generated_images/oversized_black_hoodie,_streetwear_ghost_mannequin.png";
-import bagImg from "@assets/generated_images/transparent_acrylic_bag,_industrial_hardware.png";
 
 export default function Home() {
-  const products = [
-    {
-      id: "1",
-      title: "Chrome Stompers V2",
-      price: "$450.00",
-      category: "Footwear",
-      image: bootsImg,
-      isNew: true,
+  const { data: products = [], isLoading } = useQuery<Product[]>({
+    queryKey: ["products"],
+    queryFn: async () => {
+      const response = await fetch("/api/products");
+      if (!response.ok) throw new Error("Failed to fetch products");
+      return response.json();
     },
-    {
-      id: "2",
-      title: "Void Hoodie",
-      price: "$180.00",
-      category: "Apparel",
-      image: hoodieImg,
-      isNew: true,
-    },
-    {
-      id: "3",
-      title: "Tech Tote 001",
-      price: "$220.00",
-      category: "Accessories",
-      image: bagImg,
-      isNew: false,
-    },
-    {
-      id: "4",
-      title: "Artifact No. 9",
-      price: "$800.00",
-      category: "Objects",
-      image: sculptureImg,
-      isNew: false,
-    },
-  ];
+  });
+
+  const featuredProducts = products.slice(0, 4);
 
   return (
     <div className="min-h-screen bg-background font-sans selection:bg-accent selection:text-white">
@@ -67,16 +43,22 @@ export default function Home() {
               Designed in the void. Manufactured for the streets.
             </p>
             <div className="pt-8 flex gap-4">
-              <Button className="h-14 px-8 rounded-none bg-black text-white hover:bg-accent hover:text-white text-lg font-display tracking-wide uppercase border-2 border-black transition-all hover:brutal-shadow">
+              <Button 
+                data-testid="button-shop-drop"
+                className="h-14 px-8 rounded-none bg-black text-white hover:bg-accent hover:text-white text-lg font-display tracking-wide uppercase border-2 border-black transition-all hover:brutal-shadow"
+              >
                 Shop The Drop
               </Button>
-              <Button variant="outline" className="h-14 px-8 rounded-none border-2 border-black text-black hover:bg-black hover:text-white text-lg font-display tracking-wide uppercase">
+              <Button 
+                data-testid="button-lookbook"
+                variant="outline" 
+                className="h-14 px-8 rounded-none border-2 border-black text-black hover:bg-black hover:text-white text-lg font-display tracking-wide uppercase"
+              >
                 View Lookbook
               </Button>
             </div>
           </div>
           
-          {/* Background Grid */}
           <div className="absolute inset-0 grid-lines opacity-30 pointer-events-none"></div>
         </div>
 
@@ -110,16 +92,40 @@ export default function Home() {
           <h2 className="font-display text-7xl font-bold tracking-tighter uppercase">
             Latest<br/>Drops
           </h2>
-          <Button variant="link" className="font-mono uppercase text-black hover:text-accent decoration-2 underline-offset-4 text-lg">
+          <Button 
+            data-testid="button-view-all"
+            variant="link" 
+            className="font-mono uppercase text-black hover:text-accent decoration-2 underline-offset-4 text-lg"
+          >
             View All Products <ArrowRight className="ml-2 h-4 w-4" />
           </Button>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          {products.map((product) => (
-            <ProductCard key={product.id} {...product} />
-          ))}
-        </div>
+        {isLoading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[...Array(4)].map((_, i) => (
+              <div key={i} className="border-2 border-black bg-white p-4 animate-pulse">
+                <div className="aspect-square bg-gray-200 mb-4"></div>
+                <div className="h-4 bg-gray-200 mb-2"></div>
+                <div className="h-4 bg-gray-200 w-2/3"></div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {featuredProducts.map((product) => (
+              <ProductCard 
+                key={product.id} 
+                id={product.id.toString()}
+                title={product.name}
+                price={`$${parseFloat(product.price).toFixed(2)}`}
+                image={product.imageUrl}
+                category={product.category}
+                isNew={product.stock > 0 && product.stock < 20}
+              />
+            ))}
+          </div>
+        )}
       </section>
 
       {/* Editorial Section */}
@@ -134,7 +140,10 @@ export default function Home() {
               We don't just sell products. We curate a lifestyle for the aesthetically aggressive. 
               Join the movement or get left behind in the generic void.
             </p>
-            <Button className="self-start rounded-none border-2 border-white bg-transparent hover:bg-white hover:text-black text-white h-14 px-8 font-display text-xl uppercase transition-colors">
+            <Button 
+              data-testid="button-manifesto"
+              className="self-start rounded-none border-2 border-white bg-transparent hover:bg-white hover:text-black text-white h-14 px-8 font-display text-xl uppercase transition-colors"
+            >
               Read Manifesto
             </Button>
           </div>
@@ -162,7 +171,7 @@ export default function Home() {
               <h3 className="font-display text-5xl font-bold tracking-tighter mb-6">UN/KNOWN</h3>
               <p className="font-mono text-sm max-w-xs text-muted-foreground">
                 Digital brutalism for the modern consumer. 
-                Based in the cloud. accessible everywhere.
+                Based in the cloud. Accessible everywhere.
               </p>
             </div>
             <div>
@@ -189,9 +198,9 @@ export default function Home() {
               © 2025 UN/KNOWN Systems. All rights reserved.
             </p>
             <div className="flex gap-4 mt-4 md:mt-0">
-              <div className="w-8 h-8 bg-black hover:bg-accent transition-colors"></div>
-              <div className="w-8 h-8 bg-black hover:bg-accent transition-colors"></div>
-              <div className="w-8 h-8 bg-black hover:bg-accent transition-colors"></div>
+              <div className="w-8 h-8 bg-black hover:bg-accent transition-colors cursor-pointer"></div>
+              <div className="w-8 h-8 bg-black hover:bg-accent transition-colors cursor-pointer"></div>
+              <div className="w-8 h-8 bg-black hover:bg-accent transition-colors cursor-pointer"></div>
             </div>
           </div>
         </div>
